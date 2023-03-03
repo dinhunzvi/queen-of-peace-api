@@ -7,13 +7,14 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    public function register( RegisterRequest $request): UserResource
+    public function register( RegisterRequest $request): string
     {
         $user = User::create([
             'name'      => ucwords( $request->name ),
@@ -21,35 +22,37 @@ class AuthController extends Controller
             'password'  => Hash::make( $request->password )
         ]);
 
-        return new UserResource( $user );
+        return $user->createToken( $request->device_name )->plainTextToken;
 
     }
 
-    public function login( LoginRequest $request ): \Illuminate\Http\JsonResponse
+    /**
+     * @param LoginRequest $request
+     * @return JsonResponse
+     */
+    public function login( LoginRequest $request ): JsonResponse
     {
-        $credentials = [
-            'email'     => trim( strtolower( $request->email ) ),
-            'password'  => trim( $request->password )
-        ];
+        $user = User::where( 'email', $request->email )
+            ->first();
 
-        if ( Auth::attempt( $credentials ) ) {
-            $user = User::where( 'email', $request->email )
-                ->first();
+        if ( !$user || !Hash::check( $request->password, $user->password ) ) {
 
-            // $token_response = explode( '|', $token->plainTextToken );
-
-            return response()->json([
-                'token'     => 'logged in',
-                'id'        => $user->id
-            ]);
-
-        } else {
-            return response()->json([
-                'errors'    => [
-                    'database'  => 'Email address/password combination not found'
-                ]
-            ], 422 );
         }
+
+        return $user->createToken( $request->device_name )->plainTextToken;
+
     }
 
+    /**
+     * logout a user and delete all their tokens
+     * @param int $id
+     * @return void
+     */
+    public function logout( int $id ): void
+    {
+        $user = User::find( $id );
+
+        $user->tokens()->delete();
+
+    }
 }
