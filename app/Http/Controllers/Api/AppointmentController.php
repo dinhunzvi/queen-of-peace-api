@@ -25,14 +25,23 @@ class AppointmentController extends Controller
      */
     public function store(AppointmentRequest $request): AppointmentResource
     {
-        return new AppointmentResource( Appointment::create( $request->validated() ) );
+        // return new AppointmentResource( Appointment::create( $request->validated() ) );
+        $appointment = auth()->user()->appointments()->create([
+            'patient_id'        => ( int )$request->patient_id,
+            'appointment_date'  => $request->appointment_date,
+            'bp_reading'        => $request->bp_reading,
+            'temperature'       => $request->temperature,
+            'sugar_levels'      => $request->sugar_levels
+        ]);
+
+        return new AppointmentResource( $appointment );
 
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(int $id)
+    public function show(int $id): AppointmentResource
     {
         $appointment = Appointment::find( $id );
 

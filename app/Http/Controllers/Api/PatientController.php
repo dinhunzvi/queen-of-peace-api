@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\PatientRequest;
 use App\Http\Resources\PatientResource;
+use App\Models\Appointment;
 use App\Models\Patient;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -26,7 +27,15 @@ class PatientController extends Controller
      */
     public function store(PatientRequest $request): PatientResource
     {
-        return new PatientResource( Patient::create( $request->validated()) );
+        //return new PatientResource( Patient::create( $request->validated()) );
+        $patient = auth()->user()->patients()->create([
+            'name'      => ucwords( $request->name ),
+            'email'     => strtolower( $request->email ),
+            'dob'       => trim( $request->dob ),
+            'address'   => ucwords( trim( $request->address ) )
+        ]);
+
+        return new PatientResource( $patient );
 
     }
 
@@ -48,7 +57,7 @@ class PatientController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(PatientRequest $request, Patient $patient)
+    public function update(PatientRequest $request, Patient $patient): PatientResource
     {
         $patient->update( $request->validated() );
 
@@ -61,6 +70,9 @@ class PatientController extends Controller
      */
     public function destroy(Patient $patient): Response
     {
+        Appointment::where( 'patient_id', $patient->id )
+            ->delete();
+
         $patient->delete();
 
         return response()->noContent();

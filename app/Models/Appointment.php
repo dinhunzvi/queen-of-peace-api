@@ -18,6 +18,12 @@ class Appointment extends Model
 
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo( User::class );
+
+    }
+
     protected $casts = [
         'appointment_date'  => 'date'
     ];
